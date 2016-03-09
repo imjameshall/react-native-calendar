@@ -23,6 +23,7 @@ let
 let Day = React.createClass({
 
   propTypes: {
+    currentView: PropTypes.string,
     newDay: PropTypes.object,
     isSelected: PropTypes.bool,
     isToday: PropTypes.bool,
@@ -95,7 +96,9 @@ let Day = React.createClass({
         <TouchableOpacity onPress={() => this.props.onPress(newDay)}>
           <View style={[styles.dayButton, this.props.customStyle.dayButton]}>
             <View style={this._dayCircleStyle(newDay, isSelected, isToday)}>
-              <Text style={this._dayTextStyle(newDay, isSelected, isToday)}>{currentDay + 1}</Text>
+              <Text style={this._dayTextStyle(newDay, isSelected, isToday)}>
+                {this.props.currentView == 'CurrentViewWeekView' ? currentDay : currentDay + 1}
+              </Text>
             </View>
             {usingEvents ?
               <View style={[styles.eventIndicatorFiller, this.props.customStyle.eventIndicatorFiller, hasEvent && styles.eventIndicator, hasEvent && this.props.customStyle.eventIndicator]}></View>
@@ -110,6 +113,7 @@ let Day = React.createClass({
 
 let Calendar = React.createClass({
   propTypes: {
+    currentView: PropTypes.string,
     dayHeadings: PropTypes.array,
     onDateSelect: PropTypes.func,
     scrollEnabled: PropTypes.bool,
@@ -143,28 +147,41 @@ let Calendar = React.createClass({
 
   getInitialState() {
     return {
-      calendarDates: this.getInitialStack(),
+      calendarDates: this.getInitialStack(this.props.currentView),
       selectedDate: moment(this.props.selectedDate).format(),
-      currentMonth: moment(this.props.startDate).format()
+      currentMonth: moment(this.props.startDate).format(),
+      currentWeek: moment(this.props.startDate).format(),
+      currentView: this.props.currentView
     };
   },
 
   componentWillMount() {
     this.renderedMonths = [];
+    this.renderedWeeks = [];
   },
 
   componentDidMount() {
+    console.log('[CalendarIOS componentDidMount]');
     this._scrollToItem(VIEW_INDEX);
   },
 
-  getInitialStack() {
+  getInitialStack(currentView) {
     var initialStack = [];
     if (this.props.scrollEnabled) {
-      initialStack.push(moment(this.props.startDate).subtract(2, 'month').format());
-      initialStack.push(moment(this.props.startDate).subtract(1, 'month').format());
-      initialStack.push(moment(this.props.startDate).format());
-      initialStack.push(moment(this.props.startDate).add(1, 'month').format());
-      initialStack.push(moment(this.props.startDate).add(2, 'month').format());
+      if (currentView == 'CurrentViewMonthView') {
+        initialStack.push(moment(this.props.startDate).subtract(2, 'month').format());
+        initialStack.push(moment(this.props.startDate).subtract(1, 'month').format());
+        initialStack.push(moment(this.props.startDate).format());
+        initialStack.push(moment(this.props.startDate).add(1, 'month').format());
+        initialStack.push(moment(this.props.startDate).add(2, 'month').format());
+      }
+      else {
+        initialStack.push(moment(this.props.startDate).subtract(2, 'week').format());
+        initialStack.push(moment(this.props.startDate).subtract(1, 'week').format());
+        initialStack.push(moment(this.props.startDate).format());
+        initialStack.push(moment(this.props.startDate).add(1, 'week').format());
+        initialStack.push(moment(this.props.startDate).add(2, 'week').format());
+      }
     } else {
       initialStack.push(moment(this.props.startDate).format())
     }
@@ -180,7 +197,9 @@ let Calendar = React.createClass({
             <Text style={[styles.controlButtonText, this.props.customStyle.controlButtonText]}>{this.props.prevButtonText}</Text>
           </TouchableOpacity>
           <Text style={[styles.title, this.props.customStyle.title]}>
-            {moment(this.state.currentMonth).format(this.props.titleFormat)}
+            {this.props.currentView == 'CurrentViewMonthView' ?
+                moment(this.state.currentMonth).format(this.props.titleFormat) :
+                    moment(this.state.currentWeek).format()}
           </Text>
           <TouchableOpacity style={[styles.controlButton, this.props.customStyle.controlButton]} onPress={this._onNext}>
             <Text style={[styles.controlButtonText, this.props.customStyle.controlButtonText]}>{this.props.nextButtonText}</Text>
@@ -190,7 +209,11 @@ let Calendar = React.createClass({
     } else {
       return (
         <View style={[styles.calendarControls, this.props.customStyle.calendarControls]}>
-          <Text style={[styles.title, this.props.customStyle.title]}>{moment(this.state.currentMonth).format(this.props.titleFormat)}</Text>
+          <Text style={[styles.title, this.props.customStyle.title]}>
+              {this.props.currentView == 'CurrentViewMonthView' ?
+                moment(this.state.currentMonth).format(this.props.titleFormat) :
+                    moment(this.state.currentWeek).startOf('week').format('MMM DD') + ' - ' + moment(this.state.currentWeek).endOf('week').format('MMM DD')}
+          </Text>
         </View>
       )
     }
@@ -204,6 +227,51 @@ let Calendar = React.createClass({
         )}
       </View>
     )
+  },
+
+  renderWeekView(date) {
+    var dayStart = moment(date).startOf('week').format();
+    console.log('[CalendarIOS renderWeekView] dayStart', dayStart);
+
+    var renderedWeekView;
+    var currentDay = moment(dayStart).format();
+    var newDay;
+    let days = [];
+    var weekRows = [];
+
+    for (let i = 0; i < MAX_COLUMNS; i++) {
+      newDay = moment(dayStart).set('date', moment(currentDay).date());
+
+      let isToday = (moment().isSame(newDay, 'week') && moment().isSame(newDay, 'day')) ? true : false;
+      let isSelected = (moment(this.state.selectedDate).isSame(newDay, 'week') && moment(this.state.selectedDate).isSame(newDay, 'day')) ? true : false;
+      let hasEvent = false;
+
+      days.push((
+        <Day
+          currentView={'CurrentViewWeekView'}
+          key={currentDay}
+          onPress={this._selectDate}
+          currentDay={moment(currentDay).date()}
+          newDay={newDay}
+          isToday={isToday}
+          isSelected={isSelected}
+          hasEvent={hasEvent}
+          usingEvents={this.props.eventDates.length > 0 ? true : false}
+          customStyle={this.props.customStyle}
+        />
+      ));
+
+      currentDay = moment(currentDay).add(1, 'day').format()
+    }
+
+    weekRows.push(
+      <View key={0} style={[styles.weekRow, this.props.customStyle.weekRow]}>{days}</View>
+    );
+
+    renderedWeekView = <View key={moment(date).week()} style={styles.monthContainer}>{weekRows}</View>;
+
+    this.renderedWeeks.push([date, renderedWeekView]);
+    return renderedWeekView;
   },
 
   renderMonthView(date) {
@@ -318,13 +386,33 @@ let Calendar = React.createClass({
     });
   },
 
-  _appendMonth(){
+  _prependWeek() {
+    var calendarDates = this.state.calendarDates;
+    calendarDates.unshift(moment(calendarDates[0]).subtract(1, 'week').format());
+    calendarDates.pop();
+    this.setState({
+      calendarDates: calendarDates,
+      currentWeek: calendarDates[this.props.scrollEnabled ? VIEW_INDEX : 0]
+    });
+  },
+
+  _appendMonth() {
     var calendarDates = this.state.calendarDates;
     calendarDates.push(moment(calendarDates[calendarDates.length - 1]).add(1, 'month').format());
     calendarDates.shift();
     this.setState({
       calendarDates: calendarDates,
       currentMonth: calendarDates[this.props.scrollEnabled ? VIEW_INDEX : 0]
+    });
+  },
+
+  _appendWeek() {
+    var calendarDates = this.state.calendarDates;
+    calendarDates.push(moment(calendarDates[calendarDates.length - 1]).add(1, 'week').format());
+    calendarDates.shift();
+    this.setState({
+      calendarDates: calendarDates,
+      currentWeek: calendarDates[this.props.scrollEnabled ? VIEW_INDEX : 0]
     });
   },
 
@@ -349,26 +437,66 @@ let Calendar = React.createClass({
 
   _scrollToItem(itemIndex) {
     var scrollToX = itemIndex * DEVICE_WIDTH;
+
     if (this.props.scrollEnabled) {
       this.refs.calendar.scrollWithoutAnimationTo(0, scrollToX);
     }
   },
 
   _scrollEnded(event) {
+    console.log('[CalendarIOS _scrollEnded] event.nativeEvent', event.nativeEvent);
+
     var position = event.nativeEvent.contentOffset.x;
     var currentPage = position / DEVICE_WIDTH;
 
+    console.log('[CalendarIOS _scrollEnded] currentPage, VIEW_INDEX', currentPage, VIEW_INDEX);
     if (currentPage < VIEW_INDEX) {
-      this._prependMonth();
-      this._scrollToItem(VIEW_INDEX);
-      this.props.onSwipePrev && this.props.onSwipePrev();
-    } else if (currentPage > VIEW_INDEX) {
-      this._appendMonth();
-      this._scrollToItem(VIEW_INDEX);
-      this.props.onSwipeNext && this.props.onSwipeNext();
-    } else {
+      if (this.props.currentView == 'CurrentViewMonthView') {
+        this._prependMonth();
+        console.log('[CalendarIOS _scrollEnded before _scrollToItem] VIEW_INDEX', VIEW_INDEX);
+        this._scrollToItem(VIEW_INDEX);
+        this.props.onSwipePrev && this.props.onSwipePrev();
+      }
+      else {
+        this._prependWeek();
+        this._scrollToItem(VIEW_INDEX);
+      }
+    }
+    else if (currentPage > VIEW_INDEX) {
+      if (this.props.currentView == 'CurrentViewMonthView') {
+        this._appendMonth();
+        console.log('[CalendarIOS _scrollEnded before _scrollToItem] VIEW_INDEX', VIEW_INDEX);
+        this._scrollToItem(VIEW_INDEX);
+        this.props.onSwipeNext && this.props.onSwipeNext();
+      }
+      else {
+        this._appendWeek();
+        this._scrollToItem(VIEW_INDEX);
+      }
+    }
+    else {
       return false;
     }
+  },
+
+  _renderedWeek(date) {
+    var renderedWeek = null;
+    if (moment(this.state.currentWeek).isSame(date, 'week')) {
+      renderedWeek = this.renderWeekView(date);
+    }
+    else {
+      for (var i = 0; i < this.renderedWeeks.length; i++) {
+        let compareDate = this.renderedWeeks[i][0];
+        if (moment(compareDate).isSame(date, 'week')) {
+          renderedWeek = this.renderedWeeks[i][1];
+        }
+      }
+
+      if (!renderedWeek) {
+        renderedWeek = this.renderWeekView(date);
+      }
+    }
+    return renderedWeek;
   },
 
   _renderedMonth(date) {
@@ -406,11 +534,25 @@ let Calendar = React.createClass({
             showsHorizontalScrollIndicator={false}
             automaticallyAdjustContentInsets={false}
             onMomentumScrollEnd={(event) => this._scrollEnded(event)}>
-              {this.state.calendarDates.map((date) => { return this._renderedMonth(date) })}
+              {this.state.calendarDates.map((date) => {
+                if (this.state.currentView == 'CurrentViewMonthView') {
+                  return this._renderedMonth(date)
+                }
+                else {
+                  return this._renderedWeek(date)
+                }
+              })}
           </ScrollView>
           :
           <View ref='calendar'>
-            {this.state.calendarDates.map((date) => { return this._renderedMonth(date) })}
+            {this.state.calendarDates.map((date) => {
+              if (this.state.currentView == 'CurrentViewMonthView') {
+                return this._renderedMonth(date)
+              }
+              else {
+                return this._renderedWeek(date)
+              }
+            })}
           </View>
         }
       </View>
