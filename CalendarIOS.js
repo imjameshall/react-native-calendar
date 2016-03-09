@@ -207,27 +207,31 @@ let Calendar = React.createClass({
   },
 
   renderMonthView(date) {
-    var dayStart = moment(date).startOf('month').format(),
-      daysInMonth = moment(dayStart).daysInMonth(),
-      offset = moment(dayStart).get('day'),
-      preFiller = 0,
-      currentDay = 0,
-      weekRows = [],
-      renderedMonthView;
+    var dayStart = moment(date).startOf('month').format();
+    var daysInMonth = moment(dayStart).daysInMonth();
+    var offset = moment(dayStart).get('day');
+    var preFiller = 0;
+    var currentDay = 0;
+    var weekRows = [];
+    var renderedMonthView;
 
-    for (var i = 0; i < MAX_COLUMNS; i++) {
-      var days = [];
-      for (var j = 0; j < MAX_ROWS; j++) {
+    for (let i = 0; i < MAX_COLUMNS; i++) {
+      let days = [];
+
+      for (let j = 0; j < MAX_ROWS; j++) {
         if (preFiller < offset) {
-          days.push(<Day key={`${i},${j}`} filler={true} />);
-        } else {
-          if(currentDay < daysInMonth) {
+          days.push(
+            <Day key={`${i},${j}`} filler={true} />
+          );
+        }
+        else {
+          if (currentDay < daysInMonth) {
             var newDay = moment(dayStart).set('date', currentDay + 1);
-            var isToday = (moment().isSame(newDay, 'month') && moment().isSame(newDay, 'day')) ? true : false;
-            var isSelected = (moment(this.state.selectedDate).isSame(newDay, 'month') && moment(this.state.selectedDate).isSame(newDay, 'day')) ? true : false;
-            var hasEvent = false;
+            let isToday = (moment().isSame(newDay, 'month') && moment().isSame(newDay, 'day')) ? true : false;
+            let isSelected = (moment(this.state.selectedDate).isSame(newDay, 'month') && moment(this.state.selectedDate).isSame(newDay, 'day')) ? true : false;
+            let hasEvent = false;
             if (this.props.eventDates) {
-              for (var x = 0; x < this.props.eventDates.length; x++) {
+              for (let x = 0; x < this.props.eventDates.length; x++) {
                 hasEvent = moment(this.props.eventDates[x]).isSame(newDay, 'day') ? true : false;
                 if (hasEvent) { break; }
               }
@@ -252,13 +256,22 @@ let Calendar = React.createClass({
         preFiller++;
       } // row
 
-      if(days.length > 0 && days.length < 7) {
-        for (var x = days.length; x < 7; x++) {
+      if (days.length > 0 && days.length < 7) {
+        for (let x = days.length; x < 7; x++) {
           days.push(<Day key={x} filler={true}/>);
         }
-        weekRows.push(<View key={weekRows.length} style={[styles.weekRow, this.props.customStyle.weekRow]}>{days}</View>);
-      } else {
-        weekRows.push(<View key={weekRows.length} style={[styles.weekRow, this.props.customStyle.weekRow]}>{days}</View>);
+
+        weekRows.push(
+          <View key={weekRows.length} style={[styles.weekRow, this.props.customStyle.weekRow]}>{days}</View>
+        );
+      }
+      else {
+        if (days.length === 0) {
+          weekRows.push(<View key={weekRows.length} style={[styles.weekRowBlank]}>{days}</View>);
+        }
+        else {
+          weekRows.push(<View key={weekRows.length} style={[styles.weekRowMain, this.props.customStyle.weekRow]}>{days}</View>);
+        }
       }
     } // column
 
@@ -362,13 +375,17 @@ let Calendar = React.createClass({
     var renderedMonth = null;
     if (moment(this.state.currentMonth).isSame(date, 'month')) {
       renderedMonth = this.renderMonthView(date);
-    } else {
+    }
+    else {
       for (var i = 0; i < this.renderedMonths.length; i++) {
         if (moment(this.renderedMonths[i][0]).isSame(date, 'month')) {
           renderedMonth = this.renderedMonths[i][1];
         }
       }
-      if (!renderedMonth) { renderedMonth = this.renderMonthView(date); }
+
+      if (!renderedMonth) {
+        renderedMonth = this.renderMonthView(date);
+      }
     }
     return renderedMonth;
   },
@@ -403,10 +420,13 @@ let Calendar = React.createClass({
 
 var styles = StyleSheet.create({
   calendarContainer: {
-    backgroundColor: '#f7f7f7',
+    backgroundColor: '#FFFFFF',
   },
   monthContainer: {
-    width: DEVICE_WIDTH
+    backgroundColor: '#FAFAFA',
+    width: DEVICE_WIDTH,
+    borderBottomWidth: 1,
+    borderColor: '#E8E8E8'
   },
   calendarControls: {
     flex: 1,
@@ -416,40 +436,55 @@ var styles = StyleSheet.create({
   controlButton: {
   },
   controlButtonText: {
+    fontFamily: 'Avenir Next',
     fontSize: 15,
   },
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 15,
+    fontSize: 18,
+    fontWeight: '500',
+    fontFamily: 'Avenir Next',
   },
   calendarHeading: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderBottomWidth: 1,
+    borderColor: '#E8E8E8'
   },
   dayHeading: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
-    paddingVertical: 5
+    paddingVertical: 2,
+    backgroundColor: '#FAFAFA',
+    fontFamily: 'Avenir Next',
   },
   weekendHeading: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
-    paddingVertical: 5,
-    color: '#cccccc'
+    paddingVertical: 2,
+    backgroundColor: '#FAFAFA',
+    fontFamily: 'Avenir Next',
+  },
+  weekRowBlank: {
+    flexDirection: 'row',
+    borderWidth: 0,
   },
   weekRow: {
+    borderTopWidth: 1,
+    borderColor: '#E8E8E8',
+    flexDirection: 'row',
+  },
+  weekRowMain: {
+    borderTopWidth: 1,
+    borderColor: '#E8E8E8',
     flexDirection: 'row',
   },
   dayButton: {
     alignItems: 'center',
     padding: 5,
     width: DEVICE_WIDTH / 7,
-    borderTopWidth: 1,
-    borderTopColor: '#e9e9e9',
   },
   dayButtonFiller: {
     padding: 5,
@@ -458,6 +493,8 @@ var styles = StyleSheet.create({
   day: {
     fontSize: 16,
     alignSelf: 'center',
+    fontWeight: '500',
+    fontFamily: 'Avenir Next',
   },
   eventIndicatorFiller: {
     marginTop: 3,
@@ -477,20 +514,24 @@ var styles = StyleSheet.create({
     borderRadius: 14,
   },
   currentDayCircle: {
-    backgroundColor: 'red',
+    backgroundColor: '#426FA3'
   },
   currentDayText: {
-    color: 'red',
+    fontWeight: 'bold',
+    color: '#D0021B',
+    fontFamily: 'Avenir Next',
   },
   selectedDayCircle: {
-    backgroundColor: 'black',
+    backgroundColor: '#426FA3'
   },
   selectedDayText: {
     color: 'white',
-    fontWeight: 'bold',
+    fontFamily: 'Avenir Next',
   },
   weekendDayText: {
-    color: '#cccccc',
+    fontSize: 16,
+    color: '#B0B0B0',
+    fontFamily: 'Avenir Next',
   }
 });
 
