@@ -161,7 +161,6 @@ let Calendar = React.createClass({
   },
 
   componentDidMount() {
-    console.log('[CalendarIOS componentDidMount]');
     this._scrollToItem(VIEW_INDEX);
   },
 
@@ -231,7 +230,6 @@ let Calendar = React.createClass({
 
   renderWeekView(date) {
     var dayStart = moment(date).startOf('week').format();
-    console.log('[CalendarIOS renderWeekView] dayStart', dayStart);
 
     var renderedWeekView;
     var currentDay = moment(dayStart).format();
@@ -444,16 +442,13 @@ let Calendar = React.createClass({
   },
 
   _scrollEnded(event) {
-    console.log('[CalendarIOS _scrollEnded] event.nativeEvent', event.nativeEvent);
 
     var position = event.nativeEvent.contentOffset.x;
     var currentPage = position / DEVICE_WIDTH;
 
-    console.log('[CalendarIOS _scrollEnded] currentPage, VIEW_INDEX', currentPage, VIEW_INDEX);
     if (currentPage < VIEW_INDEX) {
       if (this.props.currentView == 'CurrentViewMonthView') {
         this._prependMonth();
-        console.log('[CalendarIOS _scrollEnded before _scrollToItem] VIEW_INDEX', VIEW_INDEX);
         this._scrollToItem(VIEW_INDEX);
         this.props.onSwipePrev && this.props.onSwipePrev();
       }
@@ -465,7 +460,6 @@ let Calendar = React.createClass({
     else if (currentPage > VIEW_INDEX) {
       if (this.props.currentView == 'CurrentViewMonthView') {
         this._appendMonth();
-        console.log('[CalendarIOS _scrollEnded before _scrollToItem] VIEW_INDEX', VIEW_INDEX);
         this._scrollToItem(VIEW_INDEX);
         this.props.onSwipeNext && this.props.onSwipeNext();
       }
